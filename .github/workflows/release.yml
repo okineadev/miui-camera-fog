@@ -62,12 +62,17 @@ jobs:
 
       - name: ♻️ Generate Magisk update JSON
         run: |
-          echo "$RELEASE_BODY" | jq -Rs 'add | {
-            version: env.VERSION,
-            versionCode: (env.VERSION_CODE | tonumber),
-            zipUrl: "https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.tag }}/miui-camera-fog.zip",
-            changelog: .
-          }' > dist/update.json
+          jq -n --arg version "$VERSION" \
+                --argjson versionCode "$VERSION_CODE" \
+                --arg zipUrl "https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.tag }}/miui-camera-fog.zip" \
+                --argjson changelog "$RELEASE_BODY" \
+                '{
+                  version: $version,
+                  versionCode: $versionCode,
+                  zipUrl: $zipUrl,
+                  changelog: $changelog,
+                  minMagisk: "24.0"
+                }' > dist/update.json
         env:
           VERSION: ${{ steps.prop.outputs.version }}
           VERSION_CODE: ${{ steps.prop.outputs.versionCode }}
