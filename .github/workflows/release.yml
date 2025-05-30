@@ -9,10 +9,14 @@ jobs:
     name: 🚀 Build and Release
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v3
         with:
+          persist-credentials: true
           sparse-checkout: |
             product/
             system/
@@ -37,7 +41,7 @@ jobs:
 
       - name: 📄 Get release body
         id: release
-        uses: actions/github-script@v6
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
         with:
           script: |
             const { data: releases } = await github.rest.repos.listReleases({
@@ -70,7 +74,7 @@ jobs:
           RELEASE_BODY: ${{ steps.release.outputs.result }}
 
       - name: 📤 Upload Release Assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
         with:
           files: |
             dist/miui-camera-fog.zip
