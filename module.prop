@@ -1,0 +1,8 @@
+name=📷 Stock MIUI camera for Redmi 10C (fog)
+description=Stock MIUI camera for Redmi 10C from the original MIUI firmware, adapted for AOSP
+id=miuicamera-stock-fog
+version=v1
+versionCode=1
+author=Okinea Dev
+support=https://telegram.okinea.dev
+updateJson=https://github.com/okineadev/miui-camera-fog/releases/latest/download/update.json

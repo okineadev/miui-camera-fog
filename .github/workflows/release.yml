@@ -1,0 +1,80 @@
+name: 🚀 Build and Release Magisk Module
+
+on:
+  push:
+    tags: [v*]
+
+jobs:
+  build-release:
+    name: 🚀 Build and Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v3
+        with:
+          sparse-checkout: |
+            product/
+            system/
+            module.prop
+          sparse-checkout-cone-mode: false
+
+      - name: 🏷️ Set up release tag env
+        id: vars
+        run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
+
+      - name: 📂 Create dist directory
+        run: mkdir -p dist
+
+      - name: Add getmoduleprop function
+        run: |
+          echo '#!/bin/bash' > getmoduleprop
+          echo 'grep -E "^$1=" module.prop | cut -d '=' -f2-' >> getmoduleprop
+          chmod +x getmoduleprop
+
+      - name: 📦 Package Magisk Module
+        run: zip -0Tr dist/miui-camera-fog.zip .
+
+      - name: 📄 Get release body
+        id: release
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const release = await github.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: process.env.TAG
+            });
+            return release.data.body;
+        env:
+          TAG: ${{ steps.vars.outputs.tag }}
+
+      - name: 🔍 Extract version and versionCode from module.prop
+        id: prop
+        run: |
+          VERSION=$(./getmoduleprop version)
+          VERSION_CODE=$(./getmoduleprop versionCode)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "versionCode=$VERSION_CODE" >> $GITHUB_OUTPUT
+
+      - name: ♻️ Generate Magisk update JSON
+        run: |
+          echo "$RELEASE_BODY" | jq -Rs 'add | {
+            version: env.VERSION,
+            versionCode: (env.VERSION_CODE | tonumber),
+            zipUrl: "https://github.com/${{ github.repository }}/releases/download/${{ steps.vars.outputs.tag }}/miui-camera-fog.zip",
+            changelog: .
+          }' > dist/update.json
+        env:
+          VERSION: ${{ steps.prop.outputs.version }}
+          VERSION_CODE: ${{ steps.prop.outputs.versionCode }}
+          RELEASE_BODY: ${{ steps.release.outputs.result }}
+
+      - name: 📤 Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/miui-camera-fog.zip
+            dist/update.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
