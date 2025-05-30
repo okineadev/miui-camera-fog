@@ -20,7 +20,7 @@ Soon...
 
 ## 🏆 Special thanks
 
-- @ItzDFPlayer for help in finding the necessary libraries and analyzing errors
+- [**@ItzDFPlayer**](https://github.com/ItzDFPlayer) for help in finding the necessary libraries and analyzing errors
 
 ## ❤️ Support
 
