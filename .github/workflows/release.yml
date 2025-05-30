@@ -21,7 +21,7 @@ jobs:
 
       - name: 🏷️ Set up release tag env
         id: vars
-        run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
       - name: 📂 Create dist directory
         run: mkdir -p dist
@@ -33,29 +33,28 @@ jobs:
           chmod +x getmoduleprop
 
       - name: 📦 Package Magisk Module
-        run: zip -0Tr dist/miui-camera-fog.zip .
+        run: zip -0Tr dist/miui-camera-fog.zip product/ system/ module.prop
 
       - name: 📄 Get release body
         id: release
         uses: actions/github-script@v6
         with:
           script: |
-            const release = await github.repos.getReleaseByTag({
+            const { data: releases } = await github.rest.repos.listReleases({
               owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: process.env.TAG
+              repo: context.repo.repo
             });
-            return release.data.body;
+            const release = releases.find(r => r.tag_name === process.env.TAG);
+            if (!release) throw new Error(`Release with tag ${process.env.TAG} not found.`);
+            return release.body;
         env:
           TAG: ${{ steps.vars.outputs.tag }}
 
       - name: 🔍 Extract version and versionCode from module.prop
         id: prop
         run: |
-          VERSION=$(./getmoduleprop version)
-          VERSION_CODE=$(./getmoduleprop versionCode)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "versionCode=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "version=$(./getmoduleprop version)" >> $GITHUB_OUTPUT
+          echo "versionCode=$(./getmoduleprop versionCode)" >> $GITHUB_OUTPUT
 
       - name: ♻️ Generate Magisk update JSON
         run: |
